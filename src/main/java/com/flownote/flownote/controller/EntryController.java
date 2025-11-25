@@ -2,6 +2,8 @@ package com.flownote.flownote.controller;
 
 import com.flownote.flownote.entity.Entry;
 import com.flownote.flownote.repository.EntryRepository;
+import com.flownote.flownote.service.S3Service;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,15 +16,13 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api")
 public class EntryController {
 
     private final EntryRepository entryRepository;
-
-    public EntryController(EntryRepository entryRepository) {
-        this.entryRepository = entryRepository;
-    }
+    private final S3Service s3Service;
 
     //오늘 기록 조회
     @GetMapping("/today")
@@ -49,6 +49,21 @@ public class EntryController {
         Files.createDirectories(filePath.getParent());
         Files.write(filePath, file.getBytes());
         return filePath.toString();  // 나중에 DB에 photoUrl로 저장 가능
+    }
+
+    @PostMapping("/entry/photo")
+    public Entry addEntryWithPhoto(@RequestParam String content,
+                                   @RequestParam(required = false) BigDecimal amount,
+                                   @RequestParam("file") MultipartFile file) throws IOException {
+        String photoUrl = s3Service.uploadFile(file);
+
+        Entry entry = new Entry();
+        entry.setEntryDate(LocalDate.now());
+        entry.setContent(content);
+        entry.setAmount(amount != null ? amount : BigDecimal.ZERO);
+        entry.setPhotoUrl(photoUrl);
+
+        return entryRepository.save(entry);
     }
 }
 

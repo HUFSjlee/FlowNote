@@ -35,3 +35,9 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# 민감 정보가 들어있는 설정 파일
+src/main/resources/application.yml
+
+# 업로드 파일 (로컬 저장용 쓸 경우)
+uploads/
