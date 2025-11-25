@@ -1,0 +1,50 @@
+package com.flownote.flownote.service;
+
+import com.flownote.flownote.dto.TodaySummaryResponse;
+import com.flownote.flownote.entity.Entry;
+import com.flownote.flownote.repository.EntryRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class TodaySummaryService {
+
+    private final EntryRepository entryRepository;
+
+    public TodaySummaryResponse getTodaySummary() {
+        LocalDate today = LocalDate.now();
+
+        // 1) 오늘 기록 조회
+        List<Entry> entries = entryRepository.findByEntryDate(today);
+
+        // 2) 오늘 금액 합계 (null이면 0으로 처리)
+        BigDecimal totalAmount = entries.stream()
+                .map(e -> e.getAmount() != null ? e.getAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 3) DTO 변환
+        List<TodaySummaryResponse.EntrySummary> entrySummaries = entries.stream()
+                .map(e -> TodaySummaryResponse.EntrySummary.builder()
+                        .id(e.getId())
+                        .content(e.getContent())
+                        .amount(e.getAmount())
+                        .photoUrl(e.getPhotoUrl())
+                        .createdAt(e.getCreateAt())
+                        .build()
+                )
+                .toList();
+
+        // 4) 최종 응답 DTO
+        return TodaySummaryResponse.builder()
+                .date(today)
+                .totalAmount(totalAmount)
+                .entryCount(entries.size())
+                .entries(entrySummaries)
+                .build();
+    }
+}
