@@ -1,5 +1,6 @@
 package com.flownote.flownote.controller;
 
+import com.flownote.flownote.dto.TodaySummaryResponse;
 import com.flownote.flownote.entity.Entry;
 import com.flownote.flownote.repository.EntryRepository;
 import com.flownote.flownote.service.S3Service;
@@ -64,6 +65,37 @@ public class EntryController {
         entry.setPhotoUrl(photoUrl);
 
         return entryRepository.save(entry);
+    }
+
+    @GetMapping("/today/summary")
+    public TodaySummaryResponse getTodaySummary() {
+        LocalDate today = LocalDate.now();
+
+        // 오늘 기록한 것 전부 조회
+        List<Entry> entries = entryRepository.findByEntryDate(today);
+
+        // 오늘 사용 금액 합계 (단, amount 가 null 이면 0으로 취급)
+        BigDecimal totalAmount = entries.stream()
+                .map(e -> e.getAmount() != null ? e.getAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 화면에 넘겨줄 summary 리스트로 변환
+        List<TodaySummaryResponse.EntrySummary> entrySummaries = entries.stream()
+                .map(e -> TodaySummaryResponse.EntrySummary.builder()
+                .id(e.getId())
+                .content(e.getContent()).amount(e.getAmount())
+                        .photoUrl(e.getPhotoUrl())
+                        .createdAt(e.getCreateAt())
+                        .build()
+                )
+                .toList();
+
+        return TodaySummaryResponse.builder()
+                .date(today)
+                .totalAmount(totalAmount)
+                .entryCount(entries.size())
+                .entries(entrySummaries)
+                .build();
     }
 }
 
