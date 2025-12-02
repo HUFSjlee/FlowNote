@@ -2,7 +2,9 @@ package com.flownote.flownote.controller;
 
 import com.flownote.flownote.dto.TodaySummaryResponse;
 import com.flownote.flownote.entity.Entry;
+import com.flownote.flownote.entity.EntryType;
 import com.flownote.flownote.repository.EntryRepository;
+import com.flownote.flownote.service.EntryService;
 import com.flownote.flownote.service.S3Service;
 import com.flownote.flownote.service.TodaySummaryService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import java.util.UUID;
 @RequestMapping("/api")
 public class EntryController {
 
+    private final EntryService entryService;
     private final EntryRepository entryRepository;
     private final S3Service s3Service;
     private final TodaySummaryService todaySummaryService;
@@ -35,14 +38,28 @@ public class EntryController {
     }
 
     // 새 기록 추가 (텍스트 + 금액)
+//    @PostMapping("/entry")
+//    public Entry addEntry(@RequestParam String content,
+//                          @RequestParam(required = false) BigDecimal amount) {
+//        Entry entry = new Entry();
+//        entry.setEntryDate(LocalDate.now());
+//        entry.setContent(content);
+//        entry.setPrice(amount != null ? amount : BigDecimal.ZERO);
+//        return entryRepository.save(entry);
+//    }
+
     @PostMapping("/entry")
     public Entry addEntry(@RequestParam String content,
                           @RequestParam(required = false) BigDecimal amount) {
+
         Entry entry = new Entry();
         entry.setEntryDate(LocalDate.now());
-        entry.setContent(content);
-        entry.setAmount(amount != null ? amount : BigDecimal.ZERO);
-        return entryRepository.save(entry);
+        entry.setRawContent(content);
+        entry.setContent(content); // 당장은 동일하게
+        entry.setPrice(amount != null ? amount : BigDecimal.ZERO);
+        entry.setType(EntryType.EXPENSE); // 당장은 무조건 지출로 가정 (AI 붙이기 전)
+
+        return entryService.saveEntry(entry);
     }
 
     // 사진 업로드
@@ -64,7 +81,7 @@ public class EntryController {
         Entry entry = new Entry();
         entry.setEntryDate(LocalDate.now());
         entry.setContent(content);
-        entry.setAmount(amount != null ? amount : BigDecimal.ZERO);
+        entry.setPrice(amount != null ? amount : BigDecimal.ZERO);
         entry.setPhotoUrl(photoUrl);
 
         return entryRepository.save(entry);

@@ -15,20 +15,36 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class Entry {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private LocalDate entryDate;
 
+    @Enumerated(EnumType.STRING)
+    private EntryType type;
+
+    //사용자가 입력한 원본 텍스트
+    @Column(columnDefinition = "TEXT")
+    private String rawContent;
+
+    //AI가 정제/요약한 텍스트
     @Column(columnDefinition = "TEXT")
     private String content;
 
     private String photoUrl;
 
-    private BigDecimal amount;
+    //가계부용
+    private BigDecimal price;
+    private String category;
 
-    private LocalDateTime createAt = LocalDateTime.now();
+    //일정용
+    private LocalDateTime startDateTime;
+    private LocalDateTime endDateTime;
+    private String location;
 
+    //구글 캘린더 연동용
+    private String googleEventId;
+
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

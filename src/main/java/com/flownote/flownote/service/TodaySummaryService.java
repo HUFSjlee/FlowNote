@@ -25,7 +25,7 @@ public class TodaySummaryService {
 
         // 2) 금액 합계 (null이면 0으로 처리)
         BigDecimal totalAmount = entries.stream()
-                .map(e -> e.getAmount() != null ? e.getAmount() : BigDecimal.ZERO)
+                .map(e -> e.getPrice() != null ? e.getPrice() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // 3) DTO 변환
@@ -33,9 +33,9 @@ public class TodaySummaryService {
                 .map(e -> TodaySummaryResponse.EntrySummary.builder()
                         .id(e.getId())
                         .content(e.getContent())
-                        .amount(e.getAmount())
+                        .amount(e.getPrice())
                         .photoUrl(e.getPhotoUrl())
-                        .createdAt(e.getCreateAt())
+                        .createdAt(e.getCreatedAt())
                         .build()
                 )
                 .toList();
