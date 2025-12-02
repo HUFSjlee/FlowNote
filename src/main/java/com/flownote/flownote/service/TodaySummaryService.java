@@ -16,13 +16,14 @@ public class TodaySummaryService {
 
     private final EntryRepository entryRepository;
 
-    public TodaySummaryResponse getTodaySummary() {
-        LocalDate today = LocalDate.now();
+    /**
+     * 특정 날짜(date)의 기록 요약 조회
+     */
+    public TodaySummaryResponse getSummaryByDate(LocalDate date) {
+        // 1) 해당 날짜 기록 조회
+        List<Entry> entries = entryRepository.findByEntryDate(date);
 
-        // 1) 오늘 기록 조회
-        List<Entry> entries = entryRepository.findByEntryDate(today);
-
-        // 2) 오늘 금액 합계 (null이면 0으로 처리)
+        // 2) 금액 합계 (null이면 0으로 처리)
         BigDecimal totalAmount = entries.stream()
                 .map(e -> e.getAmount() != null ? e.getAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -41,10 +42,17 @@ public class TodaySummaryService {
 
         // 4) 최종 응답 DTO
         return TodaySummaryResponse.builder()
-                .date(today)
+                .date(date)
                 .totalAmount(totalAmount)
                 .entryCount(entries.size())
                 .entries(entrySummaries)
                 .build();
+    }
+
+    /**
+     * 오늘 날짜 기준 기록 요약 조회
+     */
+    public TodaySummaryResponse getTodaySummary() {
+        return getSummaryByDate(LocalDate.now());
     }
 }
