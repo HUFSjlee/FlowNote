@@ -20,11 +20,16 @@ public class GoogleCalendarService {
     @Value("${google.calendar.id:primary}")
     private String calendarId; // 기본은 primary
 
-    // TODO: 나중에 OAuth2로 대체
+    //application.yml 에서 access token 읽어오기
+    @Value("${google.api.access-token}")
+    private String accessToken;
+
+    //예외 던지던 메서드를 실제 토큰 반환 메서드로 변경
     private String getAccessToken() {
-        // 지금은 임시로 프로퍼티에서 읽게 하거나, 직접 세팅해 놓고 테스트해도 됨.
-        // 예: application.yml에 google.api.access-token 같은 걸 두고 불러오기
-        throw new IllegalStateException("accessToken 설정 필요");
+        if (accessToken == null || accessToken.isBlank()) {
+            throw new IllegalStateException("google.api.access-token 이 설정되어 있지 않습니다.");
+        }
+        return accessToken;
     }
 
     public String createEventForEntry(Entry entry) {
