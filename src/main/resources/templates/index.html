@@ -96,6 +96,37 @@
         </div>
     </section>
 
+    <section class="new-entry">
+        <div class="section-title">새 기록 추가</div>
+
+        <form id="entryForm">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+            <textarea name="content"
+                      placeholder="오늘 있었던 일, 메모, 사용 내역을 적어보세요"
+                      required
+                      rows="3"
+                      style="padding: 8px; border-radius: 6px; border: 1px solid #d1d5db;"></textarea>
+
+                <input type="number"
+                       name="amount"
+                       placeholder="사용 금액 (원)"
+                       min="0"
+                       step="1"
+                       style="padding: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+
+                <input type="file"
+                       name="file"
+                       accept="image/*">
+
+                <button type="submit"
+                        style="padding: 8px 12px; border-radius: 6px; border: none;
+                           background: #111827; color: white; font-weight: 600;">
+                    저장하기
+                </button>
+            </div>
+        </form>
+    </section>
+
     <section>
         <div class="section-title">오늘 기록</div>
 
@@ -129,6 +160,53 @@
             </div>
         </div>
     </section>
+    <script>
+        const form = document.getElementById('entryForm');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const content = form.content.value.trim();
+            const amount = form.amount.value;
+            const file = form.file.files[0];
+
+            if (!content) {
+                alert("내용을 입력해주세요.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("content", content);
+            if (amount) {
+                formData.append("amount", amount);
+            }
+            if (file) {
+                formData.append("file", file);
+            }
+
+            // 파일이 있으면 /api/entry/photo, 없으면 /api/entry로 보냄
+            const url = file ? "/api/entry/photo" : "/api/entry";
+
+            try {
+                const res = await fetch(url, {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    throw new Error("응답이 실패했습니다.");
+                }
+
+                // 성공 후 폼 초기화 & 화면 새로고침해서 summary 갱신
+                form.reset();
+                window.location.reload();
+            } catch (err) {
+                console.error(err);
+                alert("저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            }
+        });
+    </script>
+
 </main>
 </body>
 </html>
