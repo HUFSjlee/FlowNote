@@ -49,6 +49,10 @@ public class EntryController {
         entry.setPrice(amount != null ? amount : BigDecimal.ZERO);
         entry.setType(EntryType.EXPENSE); // 일단 기본은 지출로 가정
 
+        // TODO: 나중에 LLM 분석으로 아래 필드 자동 채우기
+        entry.setType(EntryType.NOTE); // 일단 NOTE로
+        // entryAiService.enrichEntryWithAi(entry);
+
         return entryService.saveEntry(entry);
     }
 
@@ -104,4 +108,6 @@ public class EntryController {
 
         return entryService.saveEntry(entry);
     }
+
+
 }
