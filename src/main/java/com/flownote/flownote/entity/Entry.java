@@ -15,8 +15,8 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class Entry {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private LocalDate entryDate;
@@ -24,27 +24,58 @@ public class Entry {
     @Enumerated(EnumType.STRING)
     private EntryType type;
 
-    //사용자가 입력한 원본 텍스트
+    @Enumerated(EnumType.STRING)
+    private EntryStatus status;   // ✅ DRAFT / CONFIRMED
+
+    @Enumerated(EnumType.STRING)
+    private EntrySource source;   // ✅ MANUAL / AI
+
     @Column(columnDefinition = "TEXT")
     private String rawContent;
 
-    //AI가 정제/요약한 텍스트
     @Column(columnDefinition = "TEXT")
     private String content;
 
     private String photoUrl;
 
-    //가계부용
+    // 가계부용
     private BigDecimal price;
     private String category;
 
-    //일정용
+    // 일정용
     private LocalDateTime startDateTime;
     private LocalDateTime endDateTime;
     private String location;
 
-    //구글 캘린더 연동용
+    // ✅ AI 품질/사용성 어필용
+    private Double confidence;          // 0.0 ~ 1.0
+    private Boolean needsUserConfirm;   // 애매하면 true
+
+    // ✅ 구글 캘린더 연동 옵션/상태
+    private Boolean syncToGoogle; // 사용자가 연동 ON일 때만 true
+    @Enumerated(EnumType.STRING)
+    private GoogleSyncStatus googleSyncStatus;
+
     private String googleEventId;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+
+        // 기본값(안전)
+        if (status == null) status = EntryStatus.DRAFT;
+        if (source == null) source = EntrySource.MANUAL;
+        if (needsUserConfirm == null) needsUserConfirm = true;
+        if (syncToGoogle == null) syncToGoogle = false;
+        if (googleSyncStatus == null) googleSyncStatus = GoogleSyncStatus.NOT_REQUESTED;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

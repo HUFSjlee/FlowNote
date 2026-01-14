@@ -1,0 +1,251 @@
+:root {
+  color-scheme: light; /* 다크모드 자동적용 방지 */
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #e9ecef;   /* 전체 배경: 살짝 어둡게 */
+  color: #111827;        /* 기본 글자색: 진하게 */
+}
+
+.page {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  padding: 16px;
+  background: transparent; /* body 배경을 쓰게 */
+  min-height: 100vh;
+  color: #111827;          /* 글자색 확정 */
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.inputRow {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.textInput {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+}
+
+.btn {
+  padding: 10px 12px;
+  border: 1px solid #222;
+  background: #222;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn.secondary {
+  background: white;
+  color: #222;
+}
+
+.main {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.left, .right {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.panelTitle {
+  margin-bottom: 10px;
+}
+
+.card {
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: white;
+}
+
+.cardTitle {
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.formRow input, .formRow select {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #666;
+}
+
+.muted {
+  color: #777;
+  padding: 8px 0;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.listItem {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid #f0f0f0;
+}
+
+.badge {
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  width: fit-content;
+  height: fit-content;
+}
+
+.itemTitle {
+  font-weight: 600;
+}
+
+.sub {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/*.cellSummary {*/
+/*  margin-top: 6px;*/
+/*  font-size: 11px;*/
+/*  white-space: pre-line;*/
+/*  color: #333;*/
+/*  line-height: 1.25;*/
+/*}*/
+.summaryRow {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #374151;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dot {
+  color: #9ca3af;
+}
+
+.filterRow {
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  color: #111827;
+}
+
+.chip.active {
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.toggle {
+  font-size: 12px;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.groupWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.groupHeader {
+  padding: 6px 0;
+  border-top: 1px solid #f0f0f0;
+}
+
+.cellSummaryEvent {
+  font-size: 11px;
+  line-height: 1.25;
+  padding-left: 2px;
+  color: #333;
+}
+
+/* FullCalendar 이벤트 박스 기본 스타일이 거슬리면 최소화 */
+.fc .fc-daygrid-event {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.textInput,
+.formRow input,
+.formRow select {
+  color: #111827;            /* 입력/폼 글자색 */
+  background: #ffffff;       /* 입력 배경 */
+}
+
+.textInput::placeholder {
+  color: #6b7280;            /* placeholder 회색 */
+}
+
+.left, .right, .card {
+  background: #f8fafc;       /* 카드/패널 배경 살짝 톤 다운 */
+  color: #111827;
+}

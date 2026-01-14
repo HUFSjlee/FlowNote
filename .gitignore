@@ -41,3 +41,14 @@ src/main/resources/application.yml
 
 # 업로드 파일 (로컬 저장용 쓸 경우)
 uploads/
+
+# ===== Frontend (Vite/React) =====
+client/node_modules/
+client/dist/
+client/.vite/
+client/.env
+client/.env.*
+client/npm-debug.log*
+client/yarn-debug.log*
+client/yarn-error.log*
+client/pnpm-debug.log*
