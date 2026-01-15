@@ -132,9 +132,22 @@ public class EntryParsingService {
 
         // EXPENSE인데 금액이 0이면 확인 필요
         if (e.getType() == EntryType.EXPENSE) {
+
+            // 금액이 없거나 0이면 무조건 확인 필요
             if (e.getPrice() == null || e.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
                 e.setNeedsUserConfirm(true);
                 e.setConfidence(Math.min(0.60, e.getConfidence()));
+                return;
+            }
+
+            // ✅ 자동 확정 조건(보수적으로 시작)
+            double c = (e.getConfidence() == null) ? 0.0 : e.getConfidence();
+            boolean hasCategory = (e.getCategory() != null && !e.getCategory().isBlank());
+
+            if (c >= 0.90 && hasCategory) {
+                e.setNeedsUserConfirm(false);
+            } else {
+                e.setNeedsUserConfirm(true);
             }
         }
 
@@ -222,6 +235,16 @@ public class EntryParsingService {
                 if (amt != null && amt.compareTo(BigDecimal.ZERO) > 0) {
                     e.setPrice(amt);
                 }
+            }
+
+            // ✅ category가 비어있으면 룰 기반으로 채우기
+            if (e.getCategory() == null || e.getCategory().isBlank()) {
+                e.setCategory(guessCategory(rawText));
+            }
+
+            // (선택) category도 못 맞추면 confidence를 조금 낮춰서 확인 유도
+            if (e.getCategory() == null) {
+                e.setConfidence(Math.min(e.getConfidence(), 0.75));
             }
             // 지출은 보통 "오늘"이 기본이므로 (원하면) 날짜도 룰 기준으로 고정 가능
             // e.setEntryDate(resolveDate(rawText));

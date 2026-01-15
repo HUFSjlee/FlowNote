@@ -43,7 +43,18 @@ public class OpenAiParsingService {
             - 사용자가 날짜를 말하지 않으면 entryDate는 today로 설정한다.
             - startDateTime/endDateTime에 날짜가 필요하면 entryDate를 사용해 날짜를 채운다.
             - 절대 임의의 과거/미래 날짜를 만들어내지 마라.
+            
+   
+            카테고리는 아래 중 하나로만 출력한다:
+            - "카페", "식비", "편의점", "교통", "구독", "쇼핑", "생활", "기타", null
+            
+            예시:
+            - "투썸", "스타벅스", "커피", "카페" => "카페"
+            - "점심", "저녁", "밥", "식사" => "식비"
+            - "GS", "CU", "세븐", "편의점" => "편의점"
+            단서가 없으면 category는 null로 두고 confidence를 낮게 준다.
 
+            
             JSON 스키마:
             {
               "type": "EXPENSE|SCHEDULE|NOTE",
