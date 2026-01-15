@@ -1,14 +1,16 @@
 package com.flownote.flownote.service;
 
 import com.flownote.flownote.entity.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+import com.flownote.flownote.dto.AiParsedEntryResult;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@RequiredArgsConstructor
 @Service
 public class EntryParsingService {
 
@@ -16,8 +18,10 @@ public class EntryParsingService {
     private static final Pattern NUMBER_PATTERN = Pattern.compile("(\\d{1,9})");
     private static final Pattern TIME_PATTERN = Pattern.compile("(\\d{1,2})\\s*시(\\s*(\\d{1,2})\\s*분)?");
 
+    private final OpenAiParsingService openAiParsingService;
 
     public Entry parseToDraft(String text, Boolean syncToGoogle) {
+
         String t = text == null ? "" : text.trim();
 
         Entry e = new Entry();
@@ -33,6 +37,40 @@ public class EntryParsingService {
         // 기본값
         e.setNeedsUserConfirm(true);
         e.setConfidence(0.60);
+
+        AiParsedEntryResult ai = openAiParsingService.parse(t);
+
+        if (ai != null && ai.type() != null) {
+            e.setType(ai.type());
+
+            // AI가 날짜를 주면 그걸 사용, 없으면 현재 기본값(LocalDate.now()) 유지
+            if (ai.entryDate() != null) e.setEntryDate(ai.entryDate());
+
+            // content는 "정제된 내용"으로 덮어쓰기(없으면 원문 유지)
+            if (ai.content() != null && !ai.content().isBlank()) e.setContent(ai.content());
+
+            // 지출/일정 필드들 세팅 (null이면 그대로 둠)
+            e.setPrice(ai.price());
+            e.setCategory(ai.category());
+            e.setStartDateTime(ai.startDateTime());
+            e.setEndDateTime(ai.endDateTime());
+            e.setLocation(ai.location());
+
+            // confidence/confirm 정책
+            double conf = (ai.confidence() != null) ? ai.confidence() : 0.65;
+            e.setConfidence(conf);
+
+            // confidence가 충분히 높으면 confirm 덜 요구 (임계값은 나중에 조정)
+            e.setNeedsUserConfirm(conf < 0.80);
+
+            // 가드레일 역할
+            normalizeAiResult(e, t);
+
+            // ✅ guardrail로 마지막 보정
+            applyGuardrail(e);
+
+            return e;
+        }
 
         // 1) 1차 룰 분류
         boolean moneyLike = hasMoneyLike(t);
@@ -105,6 +143,75 @@ public class EntryParsingService {
             // 지금은 startDateTime 추출을 안 하니, 최소한 "시간 단서"가 없으면 확인 필요로 유지
             // (AI 붙이면 여기서 start/end 채워지고 confidence가 올라감)
             e.setNeedsUserConfirm(true);
+        }
+    }
+
+    private void normalizeAiResult(Entry e, String rawText) {
+        LocalDate today = LocalDate.now();
+
+        // 1) entryDate가 null이면 룰 기반 resolveDate로 채움
+        if (e.getEntryDate() == null) {
+            e.setEntryDate(resolveDate(rawText));
+        }
+
+        // 2) entryDate가 "오늘 기준 너무 과거"면(예: 2024로 튐) 룰 기반 날짜로 교정
+        if (e.getEntryDate() != null && e.getEntryDate().isBefore(today.minusDays(1))) {
+            e.setEntryDate(resolveDate(rawText));
+        }
+
+        // 3) SCHEDULE인데 startDateTime이 null이면, 룰로 시각을 한 번 더 시도
+        if (e.getType() == EntryType.SCHEDULE && e.getStartDateTime() == null) {
+            LocalDate date = e.getEntryDate() != null ? e.getEntryDate() : resolveDate(rawText);
+            Matcher tm = TIME_PATTERN.matcher(rawText);
+            if (tm.find()) {
+                int hour = Integer.parseInt(tm.group(1));
+                int minute = (tm.group(3) != null) ? Integer.parseInt(tm.group(3)) : 0;
+                e.setStartDateTime(date.atTime(hour, minute));
+            }
+        }
+
+        // 4) startDateTime이 있는데 entryDate와 날짜가 다르면 entryDate 기준으로 교정
+        if (e.getStartDateTime() != null && e.getEntryDate() != null) {
+            LocalDateTime s = e.getStartDateTime();
+            if (!s.toLocalDate().equals(e.getEntryDate())) {
+                e.setStartDateTime(e.getEntryDate().atTime(s.getHour(), s.getMinute()));
+            }
+        }
+
+        // 5) SCHEDULE인데 endDateTime이 없고 start가 있으면 기본 1시간 부여
+        if (e.getType() == EntryType.SCHEDULE && e.getStartDateTime() != null && e.getEndDateTime() == null) {
+            e.setEndDateTime(e.getStartDateTime().plusHours(1));
+        }
+
+        // 6) EXPENSE인데 price가 null/0이면 룰로 한 번 더 추출 시도
+        if (e.getType() == EntryType.EXPENSE) {
+            if (e.getPrice() == null || e.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                BigDecimal amt = extractAmountFlexible(rawText);
+                if (amt != null && amt.compareTo(BigDecimal.ZERO) > 0) {
+                    e.setPrice(amt);
+                }
+            }
+            // 지출은 보통 "오늘"이 기본이므로 (원하면) 날짜도 룰 기준으로 고정 가능
+            // e.setEntryDate(resolveDate(rawText));
+        }
+
+        // 7) location이 null인데 룰로 뽑을 수 있으면 채움
+        if (e.getLocation() == null) {
+            e.setLocation(guessLocation(rawText));
+        }
+
+        // 8) content가 비어있으면 rawText로 복구
+        if (e.getContent() == null || e.getContent().isBlank()) {
+            e.setContent(rawText);
+        }
+
+        // 9) confidence가 비정상이면 범위 보정
+        if (e.getConfidence() == null) {
+            e.setConfidence(0.65);
+        } else {
+            double c = e.getConfidence();
+            if (c < 0) e.setConfidence(0.0);
+            if (c > 1) e.setConfidence(1.0);
         }
     }
 
