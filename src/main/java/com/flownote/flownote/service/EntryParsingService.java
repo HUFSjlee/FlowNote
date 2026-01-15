@@ -138,16 +138,48 @@ public class EntryParsingService {
             }
         }
 
-        // SCHEDULE인데 시간/날짜 단서가 약하면 확인 필요
         if (e.getType() == EntryType.SCHEDULE) {
-            // 지금은 startDateTime 추출을 안 하니, 최소한 "시간 단서"가 없으면 확인 필요로 유지
-            // (AI 붙이면 여기서 start/end 채워지고 confidence가 올라감)
-            e.setNeedsUserConfirm(true);
+            // 시작 시간이 없으면 무조건 확인 필요
+            if (e.getStartDateTime() == null) {
+                e.setNeedsUserConfirm(true);
+                e.setConfidence(Math.min(e.getConfidence(), 0.70));
+                return;
+            }
+
+            // 시작 시간이 있고, 신뢰도가 높으면 자동 확정(확인 불필요)
+            double c = (e.getConfidence() == null) ? 0.0 : e.getConfidence();
+            if (c >= 0.90) {
+                e.setNeedsUserConfirm(false);
+            } else {
+                e.setNeedsUserConfirm(true);
+            }
         }
     }
 
     private void normalizeAiResult(Entry e, String rawText) {
         LocalDate today = LocalDate.now();
+
+        // ✅ 상대 날짜 표현이 들어가면 AI가 뭐라 하든 룰 날짜가 최우선
+        boolean hasRelative =
+                rawText.contains("오늘") ||
+                        rawText.contains("내일") ||
+                        rawText.contains("모레") ||
+                        rawText.matches(".*내일\\s*모레.*");
+
+        if (hasRelative) {
+            LocalDate ruleDate = resolveDate(rawText);
+            e.setEntryDate(ruleDate);
+
+            // startDateTime이 이미 있으면 날짜만 entryDate에 맞춰 교정
+            if (e.getStartDateTime() != null) {
+                LocalDateTime s = e.getStartDateTime();
+                e.setStartDateTime(ruleDate.atTime(s.getHour(), s.getMinute()));
+            }
+            if (e.getEndDateTime() != null) {
+                LocalDateTime end = e.getEndDateTime();
+                e.setEndDateTime(ruleDate.atTime(end.getHour(), end.getMinute()));
+            }
+        }
 
         // 1) entryDate가 null이면 룰 기반 resolveDate로 채움
         if (e.getEntryDate() == null) {
@@ -262,12 +294,14 @@ public class EntryParsingService {
 
     private LocalDate resolveDate(String t) {
         LocalDate today = LocalDate.now();
-        if (t.contains("내일")) return today.plusDays(1);
+
+        // ✅ "내일 모레" 변형 모두 대응 (내일모레, 내일  모레 등)
+        if (t.matches(".*내일\\s*모레.*")) return today.plusDays(2);
+
         if (t.contains("모레")) return today.plusDays(2);
+        if (t.contains("내일")) return today.plusDays(1);
         if (t.contains("오늘")) return today;
 
-        // 다음주/이번주는 일단 보수적으로: 확인 필요로 두고 today 반환
-        // (AI 붙일 때 정확히)
         return today;
     }
 
@@ -301,6 +335,12 @@ public class EntryParsingService {
         Pattern p2 = Pattern.compile("([가-힣A-Za-z0-9]+)에서");
         Matcher m2 = p2.matcher(t);
         if (m2.find()) return m2.group(1);
+
+
+        // 3) "강남역" 같은 '역' 지명
+        Pattern p3 = Pattern.compile("([가-힣A-Za-z0-9]+역)");
+        Matcher m3 = p3.matcher(t);
+        if (m3.find()) return m3.group(1);
 
         return null;
     }
